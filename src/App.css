@@ -1,0 +1,363 @@
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  color: var(--text-strong);
+  letter-spacing: 0;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 4.4rem);
+  line-height: 0.96;
+  margin-top: 8px;
+}
+
+h2 {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.status-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-strong);
+  flex: 0 0 auto;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 8px 14px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.76fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.upload-panel,
+.preview-panel,
+.text-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.upload-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  grid-row: span 2;
+  padding: 18px;
+}
+
+.upload-zone {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background: var(--surface-muted);
+  border: 2px dashed var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  justify-content: center;
+  min-height: 210px;
+  padding: 24px;
+  text-align: center;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.upload-zone:hover,
+.upload-zone:focus-visible,
+.upload-zone.is-dragging {
+  background: #eef8f4;
+  border-color: var(--accent);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.upload-zone svg {
+  color: var(--accent);
+  height: 38px;
+  margin-bottom: 14px;
+  width: 38px;
+}
+
+.upload-zone span {
+  color: var(--text-strong);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.upload-zone small {
+  font-size: 0.86rem;
+  margin-top: 6px;
+}
+
+.file-row,
+.message {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.file-row {
+  background: #fff8ed;
+  border: 1px solid #f2d8af;
+  border-radius: 8px;
+  color: #5f4727;
+  font-size: 0.9rem;
+  padding: 10px 12px;
+}
+
+.file-row svg,
+.message svg {
+  flex: 0 0 auto;
+  height: 18px;
+  width: 18px;
+}
+
+.button-row {
+  display: grid;
+  gap: 10px;
+}
+
+button {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 800;
+  gap: 9px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+button:not(.upload-zone) {
+  background: var(--text-strong);
+  color: #ffffff;
+}
+
+button.secondary {
+  background: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+button:not(:disabled):hover {
+  filter: brightness(0.96);
+}
+
+button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent), transparent 68%);
+  outline-offset: 2px;
+}
+
+button svg {
+  height: 18px;
+  width: 18px;
+}
+
+.progress-block {
+  display: grid;
+  gap: 8px;
+}
+
+.progress-label {
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  font-size: 0.9rem;
+  justify-content: space-between;
+}
+
+.progress-label strong {
+  color: var(--text-strong);
+}
+
+.progress-track {
+  background: #e6e8ec;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.progress-track span {
+  background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+  display: block;
+  height: 100%;
+  transition: width 220ms ease;
+}
+
+.message {
+  background: #fff0f0;
+  border: 1px solid #f1b8b8;
+  border-radius: 8px;
+  color: #842b2b;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.preview-panel,
+.text-panel {
+  min-width: 0;
+  padding: 18px;
+}
+
+.panel-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.preview-frame {
+  align-items: center;
+  background:
+    linear-gradient(45deg, #eff2f5 25%, transparent 25%),
+    linear-gradient(-45deg, #eff2f5 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eff2f5 75%),
+    linear-gradient(-45deg, transparent 75%, #eff2f5 75%);
+  background-color: #ffffff;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+  background-size: 20px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  min-height: 320px;
+  overflow: hidden;
+}
+
+.preview-frame img {
+  display: block;
+  max-height: 56vh;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.empty-state {
+  align-items: center;
+  color: var(--text-soft);
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  min-height: 320px;
+  width: 100%;
+}
+
+.empty-state svg {
+  height: 54px;
+  width: 54px;
+}
+
+.text-panel textarea {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-strong);
+  font: 0.98rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  min-height: 310px;
+  padding: 14px;
+  resize: vertical;
+  width: 100%;
+}
+
+.text-panel textarea:focus {
+  border-color: var(--accent);
+  outline: 3px solid color-mix(in srgb, var(--accent), transparent 76%);
+}
+
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    width: min(100% - 20px, 680px);
+    padding: 22px 0;
+  }
+
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-panel {
+    grid-row: auto;
+  }
+
+  .preview-frame,
+  .empty-state {
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-shell {
+    width: calc(100% - 14px);
+  }
+
+  .upload-panel,
+  .preview-panel,
+  .text-panel {
+    padding: 12px;
+  }
+
+  .upload-zone {
+    min-height: 180px;
+  }
+
+  h1 {
+    font-size: 2.1rem;
+  }
+}
