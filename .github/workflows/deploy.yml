@@ -57,6 +57,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           APP_PORT: ${{ vars.APP_PORT }}
+          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
           APP_IMAGE: ${{ needs.build.outputs.image }}:latest
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
@@ -71,6 +72,7 @@ jobs:
           VPS_PORT="${VPS_PORT:-22}"
           OPENAI_MODEL="${OPENAI_MODEL:-gpt-5.4-mini}"
           APP_PORT="${APP_PORT:-3000}"
+          APP_DOMAIN="${APP_DOMAIN:-screenshottodocx.srv1697356.hstgr.cloud}"
           DEPLOY_PATH="${VPS_PROJECT_PATH:-${DEPLOY_PATH:-/opt/screenshot-to-docx}}"
 
           mkdir -p ~/.ssh
@@ -91,8 +93,19 @@ jobs:
               environment:
                 NODE_ENV: production
                 PORT: 3000
-              ports:
-                - "${APP_PORT:-3000}:3000"
+              expose:
+                - "3000"
+              labels:
+                - "traefik.enable=true"
+                - "traefik.http.routers.screenshot-to-docx.rule=Host(`${APP_DOMAIN}`)"
+                - "traefik.http.routers.screenshot-to-docx.entrypoints=websecure"
+                - "traefik.http.routers.screenshot-to-docx.tls=true"
+                - "traefik.http.routers.screenshot-to-docx.tls.certresolver=letsencrypt"
+                - "traefik.http.routers.screenshot-to-docx-http.rule=Host(`${APP_DOMAIN}`)"
+                - "traefik.http.routers.screenshot-to-docx-http.entrypoints=web"
+                - "traefik.http.routers.screenshot-to-docx-http.middlewares=screenshot-to-docx-https"
+                - "traefik.http.middlewares.screenshot-to-docx-https.redirectscheme.scheme=https"
+                - "traefik.http.services.screenshot-to-docx.loadbalancer.server.port=3000"
               healthcheck:
                 test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
                 interval: 30s
@@ -104,6 +117,7 @@ jobs:
           {
             printf 'APP_IMAGE=%s\n' "$APP_IMAGE"
             printf 'APP_PORT=%s\n' "$APP_PORT"
+            printf 'APP_DOMAIN=%s\n' "$APP_DOMAIN"
             printf 'OPENAI_MODEL=%s\n' "$OPENAI_MODEL"
 
             if [ -n "$OPENAI_API_KEY" ]; then

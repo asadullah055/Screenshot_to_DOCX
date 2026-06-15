@@ -34,10 +34,11 @@ Add these repository secrets:
 Add these repository variables if needed:
 
 - `APP_PORT` optional, defaults to `3000`
+- `APP_DOMAIN` optional, defaults to `screenshottodocx.srv1697356.hstgr.cloud`
 - `OPENAI_MODEL` optional, defaults to `gpt-5.4-mini`
 - `DEPLOY_PATH` optional, defaults to `/opt/screenshot-to-docx`
 
-Push to `main` or run the workflow manually. The pipeline builds and pushes an image to GitHub Container Registry, copies a production `docker-compose.yml` to the VPS, writes the runtime `.env`, pulls the new image, and restarts the service.
+Push to `main` or run the workflow manually. The pipeline builds and pushes an image to GitHub Container Registry, copies a Traefik-labeled production `docker-compose.yml` to the VPS, writes the runtime `.env`, pulls the new image, and restarts the service.
 
 ## Reverse proxy example
 
