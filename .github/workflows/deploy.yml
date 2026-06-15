@@ -68,6 +68,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          echo "Checking required deploy secrets"
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
           test -n "$VPS_SSH_KEY"
@@ -80,14 +81,17 @@ jobs:
           TRAEFIK_NETWORK="${TRAEFIK_NETWORK:-traefik-proxy}"
           DEPLOY_PATH="${VPS_PROJECT_PATH:-${DEPLOY_PATH:-/opt/screenshot-to-docx}}"
 
+          echo "Preparing SSH"
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
 
+          echo "Creating deploy directory: $DEPLOY_PATH"
           ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p '$DEPLOY_PATH'"
 
+          echo "Writing production Docker Compose file"
           cat > docker-compose.deploy.yml <<'COMPOSE'
           services:
             app:
@@ -140,11 +144,13 @@ jobs:
             fi
           } > app.env
 
+          echo "Uploading deploy files"
           scp -i ~/.ssh/deploy_key -P "$VPS_PORT" docker-compose.deploy.yml "$VPS_USER@$VPS_HOST:$DEPLOY_PATH/docker-compose.yml"
           scp -i ~/.ssh/deploy_key -P "$VPS_PORT" app.env "$VPS_USER@$VPS_HOST:$DEPLOY_PATH/.env.new"
 
+          echo "Starting remote deploy"
           ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "set -euo pipefail
+            "set -eu
           cd '$DEPLOY_PATH'
           if [ -f .env ] && ! grep -q '^OPENAI_API_KEY=' .env.new && grep -q '^OPENAI_API_KEY=' .env; then
             grep '^OPENAI_API_KEY=' .env >> .env.new
@@ -154,9 +160,14 @@ jobs:
             exit 1
           fi
           mv .env.new .env
+          echo 'Validating Docker Compose config'
+          docker compose config
           if [ -n '$GHCR_USERNAME' ] && [ -n '$GHCR_TOKEN' ]; then
             printf '%s' '$GHCR_TOKEN' | docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin
           fi
+          echo 'Pulling image'
           docker compose pull
+          echo 'Restarting app'
           docker compose up -d --remove-orphans
+          echo 'Cleaning old images'
           docker image prune -f"
