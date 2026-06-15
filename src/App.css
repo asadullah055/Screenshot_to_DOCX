@@ -267,11 +267,75 @@ button svg {
   overflow: hidden;
 }
 
+.preview-frame.has-grid {
+  align-items: stretch;
+  background: #ffffff;
+  display: block;
+  overflow: auto;
+  padding: 12px;
+}
+
 .preview-frame img {
   display: block;
   max-height: 56vh;
   max-width: 100%;
   object-fit: contain;
+}
+
+.preview-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.preview-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.preview-item img {
+  aspect-ratio: 4 / 3;
+  background: var(--surface-muted);
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  width: 100%;
+}
+
+.preview-item figcaption {
+  align-items: center;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  font-size: 0.82rem;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+
+.preview-item figcaption span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-image {
+  background: #ffffff;
+  border-color: var(--border);
+  color: var(--text-strong);
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 6px;
+  width: 30px;
+}
+
+.remove-image svg {
+  height: 15px;
+  width: 15px;
 }
 
 .empty-state {

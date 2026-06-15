@@ -1,7 +1,7 @@
 import { saveAs } from 'file-saver';
 
 const PDF_NAME = 'Checkout - SWR BKR 2B - Primary Block.pdf';
-const TEMPLATE_URL = '/templates/mcdean-commissioning-checklist.pdf';
+const TEMPLATE_URL = `${import.meta.env.BASE_URL}templates/mcdean-commissioning-checklist.pdf`;
 
 export async function downloadOcrPdf() {
   const response = await fetch(TEMPLATE_URL);

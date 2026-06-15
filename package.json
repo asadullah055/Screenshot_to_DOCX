@@ -6,9 +6,11 @@
   "scripts": {
     "postinstall": "node scripts/copy-tesseract-assets.mjs",
     "dev": "vite",
+    "dev:netlify": "npx --yes netlify-cli dev",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   },
   "dependencies": {
     "@tesseract.js-data/eng": "^1.0.0",

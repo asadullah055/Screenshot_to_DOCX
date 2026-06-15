@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, FileImage, RotateCcw, ScanText, UploadCloud, XCircle } from 'lucide-react';
+import { Download, FileImage, RotateCcw, ScanText, UploadCloud, X, XCircle } from 'lucide-react';
 import './App.css';
 import { downloadOcrDocx } from './lib/docxExport';
 import { downloadOcrPdf } from './lib/pdfExport';
@@ -10,8 +10,8 @@ const initialProgress = { percent: 0, status: 'Idle' };
 
 function App() {
   const fileInputRef = useRef(null);
-  const [file, setFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState('');
+  const itemsRef = useRef([]);
+  const [items, setItems] = useState([]);
   const [text, setText] = useState('');
   const [progress, setProgress] = useState(initialProgress);
   const [error, setError] = useState('');
@@ -19,63 +19,88 @@ function App() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [exportType, setExportType] = useState('');
 
+  const hasFiles = items.length > 0;
   const hasText = text.trim().length > 0;
   const isExporting = Boolean(exportType);
   const isBusy = isExtracting || isExporting;
-  const canExtract = Boolean(file) && !isBusy;
-  const canDownload = Boolean(file) && hasText && !isBusy;
-  const canClear = Boolean(file || text || error) && !isBusy;
+  const canExtract = hasFiles && !isBusy;
+  const canDownload = hasFiles && hasText && !isBusy;
+  const canClear = Boolean(hasFiles || text || error) && !isBusy;
 
   const fileMeta = useMemo(() => {
-    if (!file) {
+    if (!hasFiles) {
       return null;
     }
 
-    return `${file.name} - ${formatBytes(file.size)}`;
-  }, [file]);
+    const totalBytes = items.reduce((sum, item) => sum + item.file.size, 0);
+    return `${items.length} image${items.length === 1 ? '' : 's'} - ${formatBytes(totalBytes)}`;
+  }, [hasFiles, items]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      itemsRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     };
-  }, [previewUrl]);
+  }, []);
 
-  function setSelectedFile(nextFile) {
-    if (!nextFile) {
+  function addSelectedFiles(nextFiles) {
+    const files = Array.from(nextFiles || []);
+    if (!files.length) {
       return;
     }
 
-    if (!isImageFile(nextFile)) {
-      setError('Choose an image file.');
+    const imageFiles = files.filter(isImageFile);
+    if (!imageFiles.length) {
+      setError('Choose image files only.');
       return;
     }
 
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
+    const newItems = imageFiles.map((file) => ({
+      id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
+      file,
+      previewUrl: createImagePreviewUrl(file),
+    }));
 
-    setFile(nextFile);
-    setPreviewUrl(createImagePreviewUrl(nextFile));
+    setItems((currentItems) => [...currentItems, ...newItems]);
     setText('');
     setProgress(initialProgress);
-    setError('');
+    setError(
+      imageFiles.length === files.length
+        ? ''
+        : 'Some files were skipped because they were not images.',
+    );
   }
 
   function handleInputChange(event) {
-    setSelectedFile(event.target.files?.[0]);
+    addSelectedFiles(event.target.files);
     event.target.value = '';
   }
 
   function handleDrop(event) {
     event.preventDefault();
     setIsDragging(false);
-    setSelectedFile(event.dataTransfer.files?.[0]);
+    addSelectedFiles(event.dataTransfer.files);
+  }
+
+  function removeItem(itemId) {
+    setItems((currentItems) => {
+      const itemToRemove = currentItems.find((item) => item.id === itemId);
+      if (itemToRemove) {
+        URL.revokeObjectURL(itemToRemove.previewUrl);
+      }
+
+      return currentItems.filter((item) => item.id !== itemId);
+    });
+    setText('');
+    setProgress(initialProgress);
+    setError('');
   }
 
   async function handleExtractText() {
-    if (!file) {
+    if (!hasFiles) {
       return;
     }
 
@@ -84,22 +109,37 @@ function App() {
     setProgress({ percent: 0, status: 'Starting OCR' });
 
     try {
-      const extractedText = await extractTextFromImage(file, setProgress);
-      setText(extractedText);
+      const extractedSections = [];
+
+      for (const [index, item] of items.entries()) {
+        const imageNumber = index + 1;
+        const extractedText = await extractTextFromImage(item.file, ({ percent, status }) => {
+          const overallPercent = Math.round(((index + percent / 100) / items.length) * 100);
+          setProgress({
+            percent: overallPercent,
+            status: `Image ${imageNumber}/${items.length}: ${status || 'Processing'}`,
+          });
+        });
+
+        extractedSections.push(formatExtractedSection(item.file.name, extractedText));
+      }
+
+      const combinedText = extractedSections.join('\n\n');
+      setText(combinedText);
       setProgress({ percent: 100, status: 'Complete' });
-      if (!extractedText) {
+      if (!combinedText.trim()) {
         setError('OCR completed, but no text was detected.');
       }
     } catch (ocrError) {
       setProgress(initialProgress);
-      setError(ocrError instanceof Error ? ocrError.message : 'OCR failed. Try a clearer image.');
+      setError(ocrError instanceof Error ? ocrError.message : 'OCR failed. Try clearer images.');
     } finally {
       setIsExtracting(false);
     }
   }
 
   async function handleDownloadDocx() {
-    if (!file || !hasText) {
+    if (!hasFiles || !hasText) {
       return;
     }
 
@@ -107,7 +147,10 @@ function App() {
     setError('');
 
     try {
-      await downloadOcrDocx({ imageFile: file, extractedText: text });
+      await downloadOcrDocx({
+        imageFiles: items.map((item) => item.file),
+        extractedText: text,
+      });
     } catch (exportError) {
       setError(
         exportError instanceof Error
@@ -120,7 +163,7 @@ function App() {
   }
 
   async function handleDownloadPdf() {
-    if (!file || !hasText) {
+    if (!hasFiles || !hasText) {
       return;
     }
 
@@ -128,7 +171,10 @@ function App() {
     setError('');
 
     try {
-      await downloadOcrPdf({ imageFile: file, extractedText: text });
+      await downloadOcrPdf({
+        imageFiles: items.map((item) => item.file),
+        extractedText: text,
+      });
     } catch (exportError) {
       setError(
         exportError instanceof Error
@@ -141,12 +187,8 @@ function App() {
   }
 
   function handleClear() {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-
-    setFile(null);
-    setPreviewUrl('');
+    items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    setItems([]);
     setText('');
     setProgress(initialProgress);
     setError('');
@@ -183,14 +225,15 @@ function App() {
             onDrop={handleDrop}
           >
             <UploadCloud aria-hidden="true" />
-            <span>{file ? 'Replace screenshot' : 'Drop screenshot or browse'}</span>
-            <small>PNG, JPG, GIF, BMP, or other image file</small>
+            <span>{hasFiles ? 'Add more screenshots' : 'Drop screenshots or browse'}</span>
+            <small>PNG, JPG, GIF, BMP, or other image files</small>
           </button>
           <input
             ref={fileInputRef}
             className="visually-hidden"
             type="file"
             accept="image/*"
+            multiple
             onChange={handleInputChange}
           />
 
@@ -242,9 +285,27 @@ function App() {
           <div className="panel-heading">
             <h2>Image Preview</h2>
           </div>
-          <div className="preview-frame">
-            {previewUrl ? (
-              <img src={previewUrl} alt="Uploaded screenshot preview" />
+          <div className={`preview-frame ${hasFiles ? 'has-grid' : ''}`}>
+            {hasFiles ? (
+              <div className="preview-grid">
+                {items.map((item, index) => (
+                  <figure className="preview-item" key={item.id}>
+                    <img src={item.previewUrl} alt={`Uploaded screenshot ${index + 1} preview`} />
+                    <figcaption>
+                      <span>{index + 1}. {item.file.name}</span>
+                      <button
+                        type="button"
+                        className="remove-image"
+                        aria-label={`Remove ${item.file.name}`}
+                        onClick={() => removeItem(item.id)}
+                        disabled={isBusy}
+                      >
+                        <X aria-hidden="true" />
+                      </button>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
             ) : (
               <div className="empty-state">
                 <FileImage aria-hidden="true" />
@@ -268,6 +329,11 @@ function App() {
       </section>
     </main>
   );
+}
+
+function formatExtractedSection(fileName, extractedText) {
+  const text = extractedText.trim() || 'No text detected.';
+  return `--- ${fileName} ---\n${text}`;
 }
 
 export default App;
