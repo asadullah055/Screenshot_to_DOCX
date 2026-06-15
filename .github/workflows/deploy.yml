@@ -58,6 +58,8 @@ jobs:
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           APP_PORT: ${{ vars.APP_PORT }}
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+          TRAEFIK_CERT_RESOLVER: ${{ vars.TRAEFIK_CERT_RESOLVER }}
+          TRAEFIK_NETWORK: ${{ vars.TRAEFIK_NETWORK }}
           APP_IMAGE: ${{ needs.build.outputs.image }}:latest
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
@@ -73,6 +75,8 @@ jobs:
           OPENAI_MODEL="${OPENAI_MODEL:-gpt-5.4-mini}"
           APP_PORT="${APP_PORT:-3000}"
           APP_DOMAIN="${APP_DOMAIN:-screenshottodocx.srv1697356.hstgr.cloud}"
+          TRAEFIK_CERT_RESOLVER="${TRAEFIK_CERT_RESOLVER:-mytlschallenge}"
+          TRAEFIK_NETWORK="${TRAEFIK_NETWORK:-traefik-proxy}"
           DEPLOY_PATH="${VPS_PROJECT_PATH:-${DEPLOY_PATH:-/opt/screenshot-to-docx}}"
 
           mkdir -p ~/.ssh
@@ -97,27 +101,36 @@ jobs:
                 - "3000"
               labels:
                 - "traefik.enable=true"
+                - "traefik.docker.network=${TRAEFIK_NETWORK}"
                 - "traefik.http.routers.screenshot-to-docx.rule=Host(`${APP_DOMAIN}`)"
                 - "traefik.http.routers.screenshot-to-docx.entrypoints=websecure"
                 - "traefik.http.routers.screenshot-to-docx.tls=true"
-                - "traefik.http.routers.screenshot-to-docx.tls.certresolver=letsencrypt"
+                - "traefik.http.routers.screenshot-to-docx.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
                 - "traefik.http.routers.screenshot-to-docx-http.rule=Host(`${APP_DOMAIN}`)"
                 - "traefik.http.routers.screenshot-to-docx-http.entrypoints=web"
                 - "traefik.http.routers.screenshot-to-docx-http.middlewares=screenshot-to-docx-https"
                 - "traefik.http.middlewares.screenshot-to-docx-https.redirectscheme.scheme=https"
                 - "traefik.http.services.screenshot-to-docx.loadbalancer.server.port=3000"
+              networks:
+                - ${TRAEFIK_NETWORK}
               healthcheck:
                 test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
                 interval: 30s
                 timeout: 5s
                 retries: 3
                 start_period: 10s
+
+          networks:
+            ${TRAEFIK_NETWORK}:
+              external: true
           COMPOSE
 
           {
             printf 'APP_IMAGE=%s\n' "$APP_IMAGE"
             printf 'APP_PORT=%s\n' "$APP_PORT"
             printf 'APP_DOMAIN=%s\n' "$APP_DOMAIN"
+            printf 'TRAEFIK_CERT_RESOLVER=%s\n' "$TRAEFIK_CERT_RESOLVER"
+            printf 'TRAEFIK_NETWORK=%s\n' "$TRAEFIK_NETWORK"
             printf 'OPENAI_MODEL=%s\n' "$OPENAI_MODEL"
 
             if [ -n "$OPENAI_API_KEY" ]; then
